@@ -2,6 +2,7 @@ const config = require("../config/auth.config");
 const db = require("../models");
 const User = db.user;
 const Role = db.role;
+
 const nodemailer = require("nodemailer");
 
 var jwt = require("jsonwebtoken");
@@ -37,11 +38,11 @@ exports.signup = (req, res) => {
             res.status(500).send({ message: err });
           });
       } else {
-        Role.findOne({ name: "ecommerce-owner" })
-          .then(role => {
-            user.roles = [role._id];
-            return user.save();
-          })
+        Role.find({ name: { $in: ["ecommerce-owner", "fraud-analyst"] } })
+        .then(roles => {
+          user.roles = roles.map(role => role._id);
+          return user.save();
+        })
           .then(() => {
        
             res.send({ message: "User was registered successfully!" });
@@ -57,6 +58,7 @@ exports.signup = (req, res) => {
       res.status(500).send({ message: err });
     });
 };
+
 
 exports.verifyEmail = (req, res) => {
   const email = req.params.email;
@@ -77,7 +79,22 @@ exports.verifyEmail = (req, res) => {
       res.status(500).send({ message: err });
     });
 };
+exports.sendSignUpEmail = async (req, res, next) => {
+  const email = req.body.email; // Get the email address from the request body
+  const appId = req.params.appId; // Get the app ID from the request params
+
+  try {
+    await sendEmail.sendFraudAnalystSignUpEmail(email, req); // Send the email using the sendEmail method
+    res.status(200).json({ message: 'Email sent successfully' }); // Send a success response to the client
+  } catch (err) {
+    console.error(err); // Log any errors
+    res.status(500).json({ error: 'Email could not be sent' }); // Send an error response to the client
+  }
+};
+
 exports.signupfraudanalyst = (req, res) => {
+  const appId = req.params.appId;
+
   const user = new User({
     username: req.body.username,
     email: req.body.email,
@@ -104,22 +121,32 @@ exports.signupfraudanalyst = (req, res) => {
         Role.findOne({ name: "fraud-analyst" })
           .then(role => {
             user.roles = [role._id];
+            user.apps = appId; // set the app ID
             return user.save();
           })
           .then(() => {
             res.send({ message: "User was registered successfully!" });
+            sendEmail.sendVerificationEmail(user.email, req.headers.host);
+
           })
           .catch(err => {
             res.status(500).send({ message: err });
           });
-          sendEmail.sendVerificationEmail(user.email,req.headers.host);
-
       }
     })
     .catch(err => {
       res.status(500).send({ message: err });
     });
 };
+
+
+
+
+
+
+
+
+
 exports.signupsupervisor = (req, res) => {
   const user = new User({
     username: req.body.username,
@@ -163,6 +190,7 @@ exports.signupsupervisor = (req, res) => {
       res.status(500).send({ message: err });
     });
 };
+
 exports.signin = (req, res) => {
   User.findOne({
     username: req.body.username
@@ -305,3 +333,10 @@ exports.resetPassword = (req, res) => {
   });
 };
 
+
+
+
+exports.logout = (req, res) => {
+  res.clearCookie("accessToken");
+  res.status(200).send({ message: "Logout successful!" });
+}

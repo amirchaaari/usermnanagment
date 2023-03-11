@@ -23,7 +23,7 @@ module.exports = function(app) {
   );
 
   app.post(
-    "/api/auth/signup/fraud-analyst",
+    "/api/auth/signup/fraud-analyst/:appId",
     [
       verifySignUp.checkDuplicateUsernameOrEmail,
       verifySignUp.checkRolesExisted,

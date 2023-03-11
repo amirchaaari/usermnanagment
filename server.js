@@ -43,6 +43,8 @@ require("./app/routes/app.routes")(app);
 require("./app/routes/auth.routes")(app);
 require("./app/routes/user.routes")(app);
 require("./app/routes/company.routes")(app);
+require("./app/routes/platform.routes")(app);
+
 
 
 // set port, listen for requests

@@ -1,6 +1,11 @@
 const App = require('../models/app.model');
+const User = require('../models/user.model');
+const Company = require('../models/company.model');
+const Platform = require('../models/platform.model');
 
-const companiesController = {
+
+
+const appController = {
   getAllApps: async (req, res) => {
     try {
       const apps = await App.find();
@@ -26,23 +31,36 @@ const companiesController = {
           .send({ message: "Error retrieving App with id=" + id });
       });
   },
-  
 
-  createApp: async (req, res) => {
+  
+ createApp : async (req, res) => {
     try {
       const app = new App({
         name: req.body.name,
         website: req.body.website,
-        companyId:req.body.companyId,
-
+        companyId: req.body.companyId
       });
       const savedApp = await app.save();
-      res.json(savedApp);
+  
+      // Update the user's apps array with the new app ID
+      const userId = req.userId;
+      const user = await User.findById(userId);
+      user.apps.push(savedApp._id);
+      await user.save();
+
+      const updatedCompany = await Company.findOneAndUpdate(
+        { _id: req.body.companyId },
+        { $push: { apps: savedApp._id } },
+        { new: true }
+      );
+  
+    res.json({ app: savedApp, company: updatedCompany });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Server error' });
     }
   },
+  
 
   updateApp: async (req, res) => {
     try {
@@ -64,16 +82,38 @@ const companiesController = {
 
   deleteApp: async (req, res) => {
     try {
-      const app = await App.findByIdAndDelete(req.params.id);
+      const app = await App.findById(req.params.id);
+  
       if (!app) {
-        return res.status(404).json({ error: 'app not found' });
+        return res.status(404).json({ error: 'App not found' });
       }
-      res.json({ message: 'app deleted' });
+  
+      // Delete all platforms associated with the app
+      await Platform.deleteMany({ appId: app._id });
+  
+      // Remove the app from all users
+      await User.updateMany(
+        { apps: app._id },
+        { $pull: { apps: app._id } }
+      );
+  
+      // Remove the app from its company
+      await Company.updateOne(
+        { apps: app._id },
+        { $pull: { apps: app._id } }
+      );
+  
+      // Delete the app
+      await app.delete();
+  
+      res.json({ message: 'App deleted' });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Server error' });
     }
   }
-};
+  
 
-module.exports = companiesController;
+}  
+
+module.exports = appController;

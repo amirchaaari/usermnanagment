@@ -11,4 +11,5 @@ const App = mongoose.model(
   })
 );
 
-module.exports = App;
+
+module.exports = App

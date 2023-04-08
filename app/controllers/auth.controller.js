@@ -32,7 +32,7 @@ exports.signup = (req, res) => {
             return user.save();
           })
           .then(() => {
-            res.send({ message: "User was registered successfully!" });
+            res.send({ message: "an email has been sent to you. please verify your email!" });
           })
           .catch(err => {
             res.status(500).send({ message: err });
@@ -45,7 +45,7 @@ exports.signup = (req, res) => {
         })
           .then(() => {
        
-            res.send({ message: "User was registered successfully!" });
+            res.send({ message: "an email has been sent to you. please verify your email!" });
 
           })
           .catch(err => {
@@ -301,11 +301,19 @@ exports.sendPasswordResetEmail = (req, res) => {
     })
     .then(() => {
       sendEmail.sendPasswordEmail(req.body.email,req.headers.host,token)
+      res.status(200).json({ message: 'Email sent succesfully.' });
+
     })
     .catch(err => {
       res.status(500).json({ message: err.message });
     });
 };
+
+
+
+
+
+
 
 
 

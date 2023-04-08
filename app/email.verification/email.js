@@ -52,11 +52,16 @@ exports.sendVerificationEmail = async (email,req) => {
   await transporter.sendMail(mailOptions, (error) => {
     if (error) {
       console.log(error);
-      res.status(500).json({ message: "Error sending email" });
     } else {
       console.log("Email sent");
     }
   });
+
+
+
+
+ 
+  
 
 
   exports.sendFraudAnalystSignUpEmail = async (email, req) => {
